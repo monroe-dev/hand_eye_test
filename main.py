@@ -1,12 +1,10 @@
-# import matplotlib as mpl
-# mpl.use('agg')
-
 import matplotlib.pyplot as plt
 import simulate
 
-numTest = 10
+numTest = 30
 numPose = 10
-numMethod = 4
+numMethod = 5
+
 # CALIB_HAND_EYE_DANIILIDIS = 4
 # CALIB_HAND_EYE_ANDREFF = 3
 # CALIB_HAND_EYE_HORAUD = 2
@@ -44,8 +42,8 @@ plt3.grid(True)
 plt4.grid(True)
 plt1.set_title('Orientation error')
 plt2.set_title('Position error')
-plt1.legend(('TSA', 'PAR', 'HOR', 'DAN', 'AND'))
-plt2.legend(('TSA', 'PAR', 'HOR', 'DAN', 'AND'))
+plt1.legend(('TSA', 'PAR', 'HOR', 'AND', 'DAN'))
+plt2.legend(('TSA', 'PAR', 'HOR', 'AND', 'DAN'))
 
 plt3.boxplot(rvec_diff)
 plt4.boxplot(t_diff)

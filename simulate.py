@@ -1,33 +1,57 @@
 import cv2
 import numpy as np
 from numpy import linalg
-from kinematics import homogeneous_matrix, homogeneous_inverse
+import kinematics as kin
 
 
-def newPose(min_theta, max_theta, min_tvec, max_tvec):
-    """ Generate new random poses within the specific range (rvec and tvec)
-    Did it need to specify the range of tvec ?
+def newPose(type_of_motion, min_theta, max_theta, min_tvec, max_tvec):
     """
-    axis = np.random.uniform(-1, 1, (3, 1))
-    theta = np.random.uniform(min_theta, max_theta)
-    rvec = axis * theta
-    tvec = np.random.uniform(min_tvec, max_tvec, (3, 1))
-    R = np.empty((3, 3))
-    cv2.Rodrigues(rvec, R)
+    Generate new random poses within the specific range (rvec and tvec)
+    Pure translation : PT
+    Pure rotation : PR
+    Planar motion : PM
+    General motion : GM
+    """
+    if type_of_motion == 'PT':
+        tvec = np.random.uniform(min_tvec, max_tvec, (3, 1))
+        arb_theta = max_theta - min_theta
+        R = kin.RotationMatrix(arb_theta, arb_theta * 2, arb_theta * 3, True, False)
+    elif type_of_motion == 'PR':
+        arb_translation = max_tvec - min_tvec
+        tvec = kin.translationVector(arb_translation, arb_translation * 2, arb_translation * 3)
+        axis = np.random.uniform(-1, 1, (3, 1))
+        theta = np.random.uniform(min_theta, max_theta)
+        rvec = axis * theta
+        R = np.empty((3, 3))
+        cv2.Rodrigues(rvec, R)
+    elif type_of_motion == 'GM':
+        axis = np.random.uniform(-1, 1, (3, 1))
+        theta = np.random.uniform(min_theta, max_theta)
+        rvec = axis * theta
+        tvec = np.random.uniform(min_tvec, max_tvec, (3, 1))
+        R = np.empty((3, 3))
+        cv2.Rodrigues(rvec, R)
+    # elif type_of_motion == 'PM':
+
     return R, tvec
 
 
 def generateNewPose(nPose, noise):
-    """ T_hand2eye, T_base2world are constant(fixed) matrix.
-        T_base2hand, T_eye2world are different matrix at the each pose."""
+    """
+    T_hand2eye, T_base2world are constant(fixed) matrix.
+    T_base2hand, T_eye2world are different matrix at the each pose.
+    """
 
     eye_noise = [-3, 3, -3, 3]      # [min_rvec, max_rvec, min_t, max_t]
     robot_noise = [-3, 3, -3, 3]      # [min_rvec, max_rvec, min_t, max_t]
-    # Generate
-    R_hand2eye, t_hand2eye = newPose(np.deg2rad(10), np.deg2rad(50), 0.05, 0.5)
-    T_hand2eye = homogeneous_matrix(R_hand2eye, t_hand2eye)
-    R_base2world, t_base2world = newPose(np.deg2rad(5), np.deg2rad(85), 0.5, 3.5)
-    T_base2world = homogeneous_matrix(R_base2world, t_base2world)
+    # Generate the pose
+    general_motion = 'GM'
+    pure_translation = 'PT'
+    pure_rotation = 'PR'
+    R_hand2eye, t_hand2eye = newPose(general_motion, np.deg2rad(10), np.deg2rad(50), 0.05, 0.5)
+    T_hand2eye = kin.homogeneous_matrix(R_hand2eye, t_hand2eye)
+    R_base2world, t_base2world = newPose(general_motion, np.deg2rad(5), np.deg2rad(85), 0.5, 3.5)
+    T_base2world = kin.homogeneous_matrix(R_base2world, t_base2world)
 
     R_eye2world = np.zeros((1, 3, 3))
     t_eye2world = np.zeros((1, 3, 1))
@@ -35,10 +59,10 @@ def generateNewPose(nPose, noise):
     t_base2hand = np.zeros((1, 3, 1))
 
     for i in range(nPose):
-        R_base2hand_, t_base2hand_ = newPose(np.deg2rad(5), np.deg2rad(40), 0.5, 1.5)
-        T_base2hand = homogeneous_matrix(R_base2hand_, t_base2hand_)
 
-        T_eye2base = np.dot(homogeneous_inverse(T_hand2eye), homogeneous_inverse(T_base2hand))
+        R_base2hand_, t_base2hand_ = newPose(general_motion, np.deg2rad(5), np.deg2rad(40), 0.5, 1.5)
+        T_base2hand = kin.homogeneous_matrix(R_base2hand_, t_base2hand_)
+        T_eye2base = np.dot(kin.homogeneous_inverse(T_hand2eye), kin.homogeneous_inverse(T_base2hand))
         T_eye2world = np.dot(T_eye2base, T_base2world)
         R_eye2world_ = T_eye2world[:3, :3]
         t_eye2world_ = T_eye2world[:3, 3]
